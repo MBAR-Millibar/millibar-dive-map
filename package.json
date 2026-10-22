@@ -1,0 +1,33 @@
+{
+  "name": "@millibar/dive-map",
+  "version": "1.0.0",
+  "description": "The Millibar Dive Map: a world map highlighting the countries a diver has dived in, with Alpine and React adapters.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "files": ["src", "dive-map.css"],
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./alpine": "./src/alpine.js",
+    "./react": "./src/react.js",
+    "./countries": "./src/countries.js",
+    "./dive-map.css": "./dive-map.css",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "regions": "node scripts/regions.mjs"
+  },
+  "dependencies": {
+    "jsvectormap": "^1.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

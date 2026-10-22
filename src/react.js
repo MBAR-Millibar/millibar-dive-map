@@ -1,0 +1,66 @@
+'use client';
+
+/**
+ * React adapter for the Dive Map:
+ *
+ *   <DiveMap selected={['MT', 'EG']} names={{ MT: 'Malta' }} className="h-64 w-full" />
+ *
+ * Client-only: the map is drawn in an effect, so it renders an empty box on
+ * the server. In Next.js it also works behind
+ * `dynamic(() => import('@millibar/dive-map/react'), { ssr: false })`.
+ * Plain JavaScript (no JSX), so it needs no build step.
+ */
+import { createElement, useEffect, useRef } from 'react';
+import { createDiveMap, normalizeCodes } from './core.js';
+
+/**
+ * @typedef {object} DiveMapProps
+ * @property {import('./core.js').CountrySelection} [selected] The countries to highlight.
+ * @property {Record<string, string>} [names] Country names by code, for the tooltips and dots.
+ * @property {boolean} [interactive] Clicking a country toggles it (calls onChange).
+ * @property {(codes: string[]) => void} [onChange] Called with the new codes after a click.
+ * @property {string} [className] Classes for the wrapper, which needs a height.
+ */
+
+/**
+ * @param {DiveMapProps} props
+ */
+export function DiveMap({ selected = [], names = {}, interactive = false, onChange, className }) {
+    const canvasRef = useRef(null);
+    const mapRef = useRef(null);
+    const latest = useRef({ selected, names, onChange });
+    latest.current = { selected, names, onChange };
+
+    const selectedKey = normalizeCodes(selected).join(',');
+
+    useEffect(() => {
+        const map = createDiveMap(canvasRef.current, {
+            selected: latest.current.selected,
+            names: latest.current.names,
+            interactive,
+            onChange: (codes) => latest.current.onChange?.(codes),
+        });
+        mapRef.current = map;
+
+        return () => {
+            map.destroy();
+            mapRef.current = null;
+        };
+    }, [interactive]);
+
+    useEffect(() => {
+        mapRef.current?.setSelected(latest.current.selected);
+    }, [selectedKey]);
+
+    useEffect(() => {
+        mapRef.current?.setNames(names);
+    }, [names]);
+
+    return createElement(
+        'div',
+        { className: className ? `mbar-dive-map ${className}` : 'mbar-dive-map' },
+        createElement('div', { ref: canvasRef, style: { width: '100%', height: '100%' } }),
+    );
+}
+
+export default DiveMap;

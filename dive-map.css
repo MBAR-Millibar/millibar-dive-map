@@ -1,0 +1,47 @@
+/*
+ * @millibar/dive-map styles. Import after jsvectormap/dist/jsvectormap.css.
+ *
+ * Defaults suit a navy background (Millibar's glass cards): faint land,
+ * visited countries in Millibar ocean blue. Override the two variables on
+ * `.mbar-dive-map` for other grounds. The --mbar-* brand colours come from
+ * @millibar/tokens when it is loaded, with the same values as fallbacks.
+ */
+.mbar-dive-map {
+    --mbar-dive-map-land: rgb(255 255 255 / 0.14);
+    --mbar-dive-map-visited: var(--mbar-ocean-400, #4daedb);
+}
+
+.jvm-tooltip {
+    background-color: var(--mbar-navy-800, #0b1f3a);
+    font-family: inherit;
+    z-index: 50;
+}
+
+/* Zoom buttons (+ / −) in Millibar navy. */
+.mbar-dive-map .jvm-zoom-btn {
+    left: 0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    background-color: var(--mbar-navy-700, #0b2a4f);
+    color: #ffffff;
+    font-size: 0.875rem;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.mbar-dive-map .jvm-zoom-btn:hover {
+    background-color: var(--mbar-navy-600, #134a7c);
+}
+
+.mbar-dive-map .jvm-zoom-btn.jvm-zoomin {
+    top: 0.5rem;
+}
+
+.mbar-dive-map .jvm-zoom-btn.jvm-zoomout {
+    top: 2.25rem;
+}
