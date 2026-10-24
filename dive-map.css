@@ -2,13 +2,20 @@
  * @millibar/dive-map styles. Import after jsvectormap/dist/jsvectormap.css.
  *
  * Defaults suit a navy background (Millibar's glass cards): faint land,
- * visited countries in Millibar ocean blue. Override the two variables on
- * `.mbar-dive-map` for other grounds. The --mbar-* brand colours come from
- * @millibar/tokens when it is loaded, with the same values as fallbacks.
+ * visited countries in Millibar ocean blue, community countries in a soft
+ * tint of it. Override the variables on `.mbar-dive-map` for other grounds.
+ * The --mbar-* brand colours come from @millibar/tokens when it is loaded,
+ * with the same values as fallbacks.
  */
 .mbar-dive-map {
     --mbar-dive-map-land: rgb(255 255 255 / 0.14);
     --mbar-dive-map-visited: var(--mbar-ocean-400, #4daedb);
+    --mbar-dive-map-community: rgb(77 174 219 / 0.35);
+}
+
+/* Light theme (no `.dark` on <html>): a deeper, fainter community tint. */
+html:not(.dark) .mbar-dive-map {
+    --mbar-dive-map-community: rgb(13 138 197 / 0.25);
 }
 
 .jvm-tooltip {

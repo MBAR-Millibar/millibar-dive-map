@@ -5,7 +5,8 @@
  * jsVectorMap and its world map (~100 KB) are imported on first use, so
  * pages without a map never download them, and importing this module on a
  * server is safe. Colours come from the CSS custom properties
- * --mbar-dive-map-land / --mbar-dive-map-visited (see dive-map.css).
+ * --mbar-dive-map-land / --mbar-dive-map-visited / --mbar-dive-map-community
+ * (see dive-map.css).
  */
 import { OFF_MAP_COORDS } from './countries.js';
 
@@ -22,12 +23,15 @@ import { OFF_MAP_COORDS } from './countries.js';
  * @property {boolean} [interactive] Clicking a country toggles it.
  * @property {(codes: string[]) => void} [onChange] Called with the new codes after a click toggles a country.
  * @property {boolean} [autoFocus] Zoom in on the countries when the map is first drawn with some (default true).
+ * @property {Record<string, number>} [community] Divers per country, drawn in the soft community colour under the selected countries.
+ * @property {(count: number) => string} [communityLabel] The tooltip text for a community country's count (default `${n} divers`).
  */
 
 /**
  * @typedef {object} DiveMap
  * @property {(selected: CountrySelection) => void} setSelected Highlight these countries instead.
  * @property {(names: Record<string, string>) => void} setNames Replace the country names.
+ * @property {(community: Record<string, number>) => void} setCommunity Replace the community layer.
  * @property {() => void} focus Zoom in on the highlighted countries (the whole world when there are none).
  * @property {() => void} destroy Remove the map and its tooltip.
  * @property {Promise<void>} ready Settles once the map is drawn (or right away after destroy()).
@@ -171,6 +175,19 @@ export function normalizeCodes(selected) {
 }
 
 /**
+ * @param {Record<string, number> | null | undefined} community
+ * @returns {Record<string, number>} The countries with at least one diver.
+ */
+export function normalizeCommunity(community) {
+    return Object.fromEntries(Object.entries(community ?? {})
+        .filter(([, count]) => Number(count) > 0)
+        .map(([code, count]) => [code, Number(count)]));
+}
+
+/** @param {number} count */
+export const defaultCommunityLabel = (count) => `${count} divers`;
+
+/**
  * Draw the Dive Map into `element`. The map appears once jsVectorMap has
  * loaded; setSelected() and setNames() can be called before that.
  *
@@ -178,24 +195,62 @@ export function normalizeCodes(selected) {
  * @param {DiveMapOptions} [options]
  * @returns {DiveMap}
  */
-export function createDiveMap(element, { selected = [], names = {}, interactive = false, onChange, autoFocus = true } = {}) {
+export function createDiveMap(element, {
+    selected = [],
+    names = {},
+    interactive = false,
+    onChange,
+    autoFocus = true,
+    community = {},
+    communityLabel = defaultCommunityLabel,
+} = {}) {
     let codes = normalizeCodes(selected);
     let countryNames = names ?? {};
+    let communityCounts = normalizeCommunity(community);
+    let communityColour = null;
     let map = null;
     let destroyed = false;
+
+    /** The tooltip text for `code`: its name, plus its diver count when it is a community country. */
+    const label = (code, name) => (communityCounts[code]
+        ? `${name} · ${communityLabel(communityCounts[code])}`
+        : name);
 
     const paint = () => {
         if (! map) {
             return;
         }
 
+        // The community tint goes in each region's `current` style, which
+        // jsVectorMap draws under `selected`: a picked country stays strong,
+        // and deselecting it brings the tint back.
+        for (const [code, region] of Object.entries(map.regions)) {
+            const current = region.element.shape.style.current;
+
+            if (communityCounts[code]) {
+                current.fill = communityColour;
+            } else if ('fill' in current) {
+                delete current.fill;
+            } else {
+                continue;
+            }
+
+            region.element.shape.updateStyle();
+        }
+
         map.clearSelectedRegions();
         map.setSelectedRegions(codes.filter((code) => map.regions[code]));
 
+        const dot = (code) => ({ name: label(code, countryNames[code] ?? code), coords: OFF_MAP_COORDS[code] });
+
         map.removeMarkers();
+        // Community dots first, so the diver's own are drawn over them.
+        map.addMarkers(Object.keys(communityCounts)
+            .filter((code) => ! map.regions[code] && OFF_MAP_COORDS[code] && ! codes.includes(code))
+            .map((code) => ({ ...dot(code), style: { initial: { fill: communityColour, r: 3 } } })));
         map.addMarkers(codes
             .filter((code) => ! map.regions[code] && OFF_MAP_COORDS[code])
-            .map((code) => ({ name: countryNames[code] ?? code, coords: OFF_MAP_COORDS[code] })));
+            .map(dot));
     };
 
     const toggle = (code) => {
@@ -215,6 +270,7 @@ export function createDiveMap(element, { selected = [], names = {}, interactive 
         const style = getComputedStyle(element);
         const land = style.getPropertyValue('--mbar-dive-map-land').trim() || '#cbd5e1';
         const visited = style.getPropertyValue('--mbar-dive-map-visited').trim() || '#0d8ac5';
+        communityColour = style.getPropertyValue('--mbar-dive-map-community').trim() || 'rgb(13 138 197 / 0.25)';
 
         map = new jsVectorMap({
             selector: element,
@@ -240,7 +296,7 @@ export function createDiveMap(element, { selected = [], names = {}, interactive 
                 hover: { cursor: 'default', fillOpacity: 0.85 },
             },
             onRegionTooltipShow: (event, tooltip, code) => {
-                tooltip.text(countryNames[code] ?? tooltip.text());
+                tooltip.text(label(code, countryNames[code] ?? tooltip.text()));
             },
             onRegionClick: (event, code) => {
                 if (interactive) {
@@ -268,6 +324,11 @@ export function createDiveMap(element, { selected = [], names = {}, interactive 
 
         setNames(names) {
             countryNames = names ?? {};
+            paint();
+        },
+
+        setCommunity(community) {
+            communityCounts = normalizeCommunity(community);
             paint();
         },
 

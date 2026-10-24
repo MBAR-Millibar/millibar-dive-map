@@ -7,6 +7,7 @@
  *
  * `selected` may be an entangled Livewire property: the map repaints when it
  * changes, and with `interactive: true` clicking a country toggles it there.
+ * `community` (divers per country) repaints the same way when it changes.
  * Register it with `window.mbarDiveMap = mbarDiveMap` or `Alpine.data('mbarDiveMap', mbarDiveMap)`.
  */
 import { createDiveMap, normalizeCodes } from './core.js';
@@ -14,9 +15,10 @@ import { createDiveMap, normalizeCodes } from './core.js';
 /**
  * @param {import('./core.js').DiveMapOptions} [options]
  */
-export function mbarDiveMap({ selected = [], names = {}, interactive = false, autoFocus = true } = {}) {
+export function mbarDiveMap({ selected = [], names = {}, interactive = false, autoFocus = true, community = {}, communityLabel } = {}) {
     return {
         selected,
+        community,
         map: null,
 
         init() {
@@ -25,12 +27,15 @@ export function mbarDiveMap({ selected = [], names = {}, interactive = false, au
                 names,
                 interactive,
                 autoFocus,
+                community: this.community,
+                communityLabel,
                 onChange: (codes) => {
                     this.selected = codes;
                 },
             });
 
             this.$watch('selected', () => this.map?.setSelected(this.codes()));
+            this.$watch('community', () => this.map?.setCommunity(this.community));
 
             return this.map.ready;
         },

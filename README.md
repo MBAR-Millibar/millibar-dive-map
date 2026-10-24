@@ -9,6 +9,7 @@ It wraps [jsVectorMap](https://github.com/themustafaomar/jsvectormap) `^1.7.0` a
 - The constructor gets `markers: []`. Without it, jsVectorMap puts later dots in the scaled regions group, far from their country.
 - Zoom uses the + / − buttons only. Scroll-zoom is off, so scrolling over the map still scrolls the page; once zoomed, drag to pan.
 - When a map is first drawn with countries, it zooms in on them (shapes and dots), with some room around them and at most 4× the world view. It happens once, so picking countries afterwards doesn't move the map. Pass `autoFocus: false` to keep the world view, or call `focus()` to zoom in again.
+- An optional community layer (`community`, divers per country) tints the community's countries softly under the diver's own, which stay strong on top. See [Community layer](#community-layer).
 - jsVectorMap and its world map (about 100 KB) are imported on first use, so pages without a map don't download them.
 
 Plain ESM JavaScript with JSDoc types. There is no build step.
@@ -16,8 +17,8 @@ Plain ESM JavaScript with JSDoc types. There is no build step.
 ## Install
 
 ```bash
-npm install https://github.com/MBAR-Millibar/millibar-dive-map/archive/refs/tags/v1.0.0.tar.gz
-# or: pnpm add https://github.com/MBAR-Millibar/millibar-dive-map/archive/refs/tags/v1.0.0.tar.gz
+npm install https://github.com/MBAR-Millibar/millibar-dive-map/archive/refs/tags/v1.2.0.tar.gz
+# or: pnpm add https://github.com/MBAR-Millibar/millibar-dive-map/archive/refs/tags/v1.2.0.tar.gz
 ```
 
 Pin a tag so a project only changes when you bump it.
@@ -35,12 +36,15 @@ Import jsVectorMap's stylesheet, then this package's:
 @import '@millibar/dive-map/dive-map.css';
 ```
 
-The map reads two CSS variables from its element (inherited from the `.mbar-dive-map` wrapper):
+The map reads three CSS variables from its element (inherited from the `.mbar-dive-map` wrapper):
 
 | Variable | Default (navy ground) | Used for |
 | --- | --- | --- |
 | `--mbar-dive-map-land` | `rgb(255 255 255 / 0.14)` | Every country |
 | `--mbar-dive-map-visited` | `var(--mbar-ocean-400, #4daedb)` | Visited countries and dots |
+| `--mbar-dive-map-community` | `rgb(77 174 219 / 0.35)`; `rgb(13 138 197 / 0.25)` under `html:not(.dark)` | Community countries and their (smaller) dots |
+
+`dive-map.css` sets the light community value with `html:not(.dark) .mbar-dive-map`, so to override `--mbar-dive-map-community` in a light theme use a selector at least as specific (for example `html:not(.dark) .my-map`).
 
 The defaults suit a navy background. For a light ground, override them after the import, for example the Millibar panel's light and dark themes:
 
@@ -98,6 +102,8 @@ import { DiveMap } from '@millibar/dive-map/react';
 | `interactive` | `boolean` | Clicking a country toggles it and calls `onChange` |
 | `onChange` | `(codes: string[]) => void` | The new codes after a click |
 | `autoFocus` | `boolean` | Zoom in on the countries when the map is first drawn with some (default `true`) |
+| `community` | `Record<string, number>` | Divers per country, drawn under the selected ones (see [Community layer](#community-layer)) |
+| `communityLabel` | `(count: number) => string` | Tooltip text for a community count (default `` (n) => `${n} divers` ``) |
 | `className` | `string` | Added to the `.mbar-dive-map` wrapper |
 
 The file starts with `'use client'` and draws the map in an effect, so it renders an empty box on the server and is safe in the App Router. To keep jsVectorMap out of the server bundle entirely, load it with `next/dynamic`:
@@ -123,11 +129,34 @@ const map = createDiveMap(document.querySelector('#map'), {
 
 map.setSelected(['MT', 'GF']); // repaint
 map.setNames({ MT: 'Malte' });
+map.setCommunity({ EG: 12 });  // replace the community layer
 await map.ready;               // drawn
 map.destroy();                 // removes the SVG, zoom buttons and tooltip
 ```
 
-The element must sit inside `.mbar-dive-map` (or set the two variables on it) and have a size. `setSelected()` and `setNames()` can be called before the map has loaded.
+The element must sit inside `.mbar-dive-map` (or set the two variables on it) and have a size. `setSelected()`, `setNames()` and `setCommunity()` can be called before the map has loaded.
+
+## Community layer
+
+Pass `community`, the number of divers per country (ISO alpha-2), to show where the community dives under the diver's own countries:
+
+```js
+const map = createDiveMap(element, {
+    selected: ['MT'],
+    community: { MT: 40, EG: 128, MV: 9 },
+    communityLabel: (n) => `${n} plongeurs`, // default: (n) => `${n} divers`
+});
+
+map.setCommunity({ EG: 130, PH: 3 }); // at runtime
+```
+
+- Community countries are filled with `--mbar-dive-map-community`. The diver's own `selected` countries keep `--mbar-dive-map-visited` on top, and deselecting one brings its community tint back.
+- Countries drawn as dots get a smaller dot (radius 3, against 4) in the community colour, under the diver's own dots. A dot that is also selected is drawn as the diver's.
+- The tooltip of a community country reads `<name> · <communityLabel(count)>`, for example "Egypt · 128 divers". Other countries keep their plain name.
+- Counts of 0 (or less) are left out. `autoFocus` and `focus()` only look at `selected`, never the community.
+- Alpine: `mbarDiveMap({ community: {...}, communityLabel })`. `community` is a property of the component, so the map repaints when it changes (`this.community = {...}`, or an entangled Livewire property). React: the `community` and `communityLabel` props; the map repaints when the codes or counts change, not on every new object.
+
+Without `community`, the map is drawn exactly as in v1.1.0.
 
 ## Countries
 
