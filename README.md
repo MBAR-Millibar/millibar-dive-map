@@ -93,7 +93,7 @@ import { DiveMap } from '@millibar/dive-map/react';
 | Prop | Type | |
 | --- | --- | --- |
 | `selected` | `string[]` | ISO alpha-2 codes to highlight |
-| `names` | `Record<string, string>` | Names for the tooltips and dots (defaults to the map's English names) |
+| `names` | `Record<string, string>` | Names for the tooltips and dots. Without one, a shape shows the map's English name and a dot shows its code |
 | `interactive` | `boolean` | Clicking a country toggles it and calls `onChange` |
 | `onChange` | `(codes: string[]) => void` | The new codes after a click |
 | `className` | `string` | Added to the `.mbar-dive-map` wrapper |
