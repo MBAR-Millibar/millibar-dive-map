@@ -14,7 +14,7 @@ import { createDiveMap, normalizeCodes } from './core.js';
 /**
  * @param {import('./core.js').DiveMapOptions} [options]
  */
-export function mbarDiveMap({ selected = [], names = {}, interactive = false } = {}) {
+export function mbarDiveMap({ selected = [], names = {}, interactive = false, autoFocus = true } = {}) {
     return {
         selected,
         map: null,
@@ -24,6 +24,7 @@ export function mbarDiveMap({ selected = [], names = {}, interactive = false } =
                 selected: this.selected,
                 names,
                 interactive,
+                autoFocus,
                 onChange: (codes) => {
                     this.selected = codes;
                 },

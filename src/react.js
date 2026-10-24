@@ -19,13 +19,14 @@ import { createDiveMap, normalizeCodes } from './core.js';
  * @property {Record<string, string>} [names] Country names by code, for the tooltips and dots.
  * @property {boolean} [interactive] Clicking a country toggles it (calls onChange).
  * @property {(codes: string[]) => void} [onChange] Called with the new codes after a click.
+ * @property {boolean} [autoFocus] Zoom in on the countries when the map is first drawn with some (default true).
  * @property {string} [className] Classes for the wrapper, which needs a height.
  */
 
 /**
  * @param {DiveMapProps} props
  */
-export function DiveMap({ selected = [], names = {}, interactive = false, onChange, className }) {
+export function DiveMap({ selected = [], names = {}, interactive = false, onChange, className, autoFocus = true }) {
     const canvasRef = useRef(null);
     const mapRef = useRef(null);
     const latest = useRef({ selected, names, onChange });
@@ -38,6 +39,7 @@ export function DiveMap({ selected = [], names = {}, interactive = false, onChan
             selected: latest.current.selected,
             names: latest.current.names,
             interactive,
+            autoFocus,
             onChange: (codes) => latest.current.onChange?.(codes),
         });
         mapRef.current = map;
@@ -46,7 +48,7 @@ export function DiveMap({ selected = [], names = {}, interactive = false, onChan
             map.destroy();
             mapRef.current = null;
         };
-    }, [interactive]);
+    }, [interactive, autoFocus]);
 
     useEffect(() => {
         mapRef.current?.setSelected(latest.current.selected);

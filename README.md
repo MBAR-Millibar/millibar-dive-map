@@ -8,6 +8,7 @@ It wraps [jsVectorMap](https://github.com/themustafaomar/jsvectormap) `^1.7.0` a
 - Countries too small for the world map (Maldives, Malta, most Caribbean and Pacific islands) are drawn as dots (`OFF_MAP_COORDS`).
 - The constructor gets `markers: []`. Without it, jsVectorMap puts later dots in the scaled regions group, far from their country.
 - Zoom uses the + / − buttons only. Scroll-zoom is off, so scrolling over the map still scrolls the page; once zoomed, drag to pan.
+- When a map is first drawn with countries, it zooms in on them (shapes and dots), with some room around them and at most 4× the world view. It happens once, so picking countries afterwards doesn't move the map. Pass `autoFocus: false` to keep the world view, or call `focus()` to zoom in again.
 - jsVectorMap and its world map (about 100 KB) are imported on first use, so pages without a map don't download them.
 
 Plain ESM JavaScript with JSDoc types. There is no build step.
@@ -96,6 +97,7 @@ import { DiveMap } from '@millibar/dive-map/react';
 | `names` | `Record<string, string>` | Names for the tooltips and dots. Without one, a shape shows the map's English name and a dot shows its code |
 | `interactive` | `boolean` | Clicking a country toggles it and calls `onChange` |
 | `onChange` | `(codes: string[]) => void` | The new codes after a click |
+| `autoFocus` | `boolean` | Zoom in on the countries when the map is first drawn with some (default `true`) |
 | `className` | `string` | Added to the `.mbar-dive-map` wrapper |
 
 The file starts with `'use client'` and draws the map in an effect, so it renders an empty box on the server and is safe in the App Router. To keep jsVectorMap out of the server bundle entirely, load it with `next/dynamic`:
